@@ -21,9 +21,28 @@ function scrape(f) {
 
 		titles.each(function(i, inner){
 			location = $("p", inner).eq(1)
+			
+			dateStr = $("p", inner).eq(0).text()
+			month = dateStr.split(" ")[0]
+			r = /(\d+)/g
+			start_day = r.exec(dateStr)[0]
+			end_day_m = r.exec(dateStr)
+			if (end_day_m == undefined) {
+				end_day = start_day;
+			} else {
+				end_day = end_day_m[0]
+			}
+			
 			hacks.push({
 				"title": $("h3", inner).text(),
-				"date": $("p", inner).eq(0).text(),
+				"start_date": {
+					"day" : start_day,
+					"month": month
+				},
+				"end_date": {
+					"day": end_day,
+					"month": month
+				},
 				"splash" : $("div.image-wrap>img", inner).attr("src"),
 				"logo" : $("div.event-logo>img", inner).attr("src"),
 				"address_local": $("div>span", inner).eq(0).text(),
