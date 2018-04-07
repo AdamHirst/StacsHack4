@@ -5,8 +5,7 @@ var fs = require("fs")
 
 module.exports =  {
 	"scrape": scrape,
-	"doTheDo": doTheDo,
-	"allDone" : allDone
+	"scrapeHackathonCom" : scrapeHackathonCom
 }
 
 function scrape(f) {
@@ -53,40 +52,17 @@ function scrape(f) {
 		f(hacks)
 	})	
 }
-var allHacks = []
 
-function doTheDo() {
-	scrapeHackaphonCom(0, complete, allDone);
-}
- 
-function allDone() {
-	return allHacks
-}
+function scrapeHackathonCom(cb, page_num) {
+	if (!page_num) page_num = 0;
 
-function complete(hacks, page_num, all_done) {
-	console.log("Got " + hacks.length + " hackaphons; total" + allHacks.length)
-	allHacks = allHacks.concat(hacks)
-	for (var i = 0; i < hacks.length; i++) {
-		h = hacks[i]
-		console.log(h.title)
-	}
-	if (hacks.length == 0) {
-		// Done scraping
-		console.log("DONE")
-		all_done()
-	} else {
-		scrapeHackaphonCom(page_num + 1, complete, all_done)
-	}
-}
-
-function scrapeHackaphonCom(page_num, f, all_done) {
 	request({"rejectUnauthorized" : false,
 			 "url": "https://www.hackathon.com/theme/industry?%24skip=" + page_num * 10
 	}, function(err, response, html){
 		$  = cheerio.load(html)
 		hacks = []
-		var hackaphons = $(".ht-eb-card")
-		hackaphons.each(function(i, hack) {
+		var Hackathons = $(".ht-eb-card")
+		Hackathons.each(function(i, hack) {
 			date_container = $(".ht-eb-card__left>.ht-eb-card__date", hack)
 
 			start_day = $(".date--start>.date__day", date_container).text()
@@ -125,7 +101,13 @@ function scrapeHackaphonCom(page_num, f, all_done) {
 			})
 		})
 
-		f(hacks, page_num, all_done)
+		if (hacks.length != 0) {
+			scrapeHackathonCom(page_num++, newHacks => {
+				hacks.push(...newHacks);
+			});
+		}
+
+		cb(hacks)
 
 	})
 }

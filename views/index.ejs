@@ -92,10 +92,9 @@
             // Update the prices
             function getNext(i) {
                 if (i >= rawLocations.length) return;
-                console.log(rawLocations);
                 getQuotes(market, geoString, rawLocations[i].geoString, rawLocations[i].start_date.year + '-' + rawLocations[i].start_date.month + '-' + rawLocations[i].start_date.day, rawLocations[i].end_date.year + '-' + rawLocations[i].end_date.month + '-' + rawLocations[i].end_date.day, (raw) => {
                     var json = JSON.parse(raw);
-
+                    console.log(raw);
                     // Parse carriers and places
                     json.Places.forEach(function(place) {
                         places[place.PlaceId] = place.Name;
@@ -140,7 +139,6 @@
 
             getGeoString(country, place.name, geoString => {
                 geoString = geoString;
-                console.log(geoString);
                 if (geoString == "" || geoString == "{}") geoString = "EDI"; 
                 updatePrices();
             });
@@ -200,7 +198,6 @@
             rawLocations = JSON.parse(locations).hackathons;
             var container = $('#gh-card-container');
             container.html('');
-            console.log(rawLocations);
             for (var i = 0; i < rawLocations.length; i++) {
                 rawLocations[i].id = i;
                 if (!rawLocations[i].start_date) {
