@@ -15,5 +15,9 @@
   "bugs": {
     "url": "https://github.com/AdamHirst/StacsHack4/issues"
   },
-  "homepage": "https://github.com/AdamHirst/StacsHack4#readme"
+  "homepage": "https://github.com/AdamHirst/StacsHack4#readme",
+  "dependencies": {
+    "ejs": "^2.5.8",
+    "express": "^4.16.3"
+  }
 }
