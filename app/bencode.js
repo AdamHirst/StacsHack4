@@ -1,8 +1,12 @@
 var cheerio = require("cheerio")
 var request = require("request")
+require('ssl-root-cas').inject();
+var fs = require("fs")
 
 module.exports =  {
-	"scrape": scrape
+	"scrape": scrape,
+	"doTheDo": doTheDo,
+	"allDone" : allDone
 }
 
 function scrape(f) {
@@ -12,7 +16,6 @@ function scrape(f) {
 		}
 
 		var $ = cheerio.load(html);
-		$(".inner>h3").children()
 		var titles = $(".inner")
 		hacks = []
 
@@ -30,4 +33,80 @@ function scrape(f) {
 
 		f(hacks)
 	})	
+}
+var allHacks = []
+
+function doTheDo() {
+	scrapeHackaphonCom(0, complete, allDone);
+}
+ 
+function allDone() {
+	return allHacks
+}
+
+function complete(hacks, page_num, all_done) {
+	console.log("Got " + hacks.length + " hackaphons; total" + allHacks.length)
+	allHacks = allHacks.concat(hacks)
+	for (var i = 0; i < hacks.length; i++) {
+		h = hacks[i]
+		console.log(h.title)
+	}
+	if (hacks.length == 0) {
+		// Done scraping
+		console.log("DONE")
+		all_done()
+	} else {
+		scrapeHackaphonCom(page_num + 1, complete, all_done)
+	}
+}
+
+function scrapeHackaphonCom(page_num, f, all_done) {
+	request({"rejectUnauthorized" : false,
+			 "url": "https://www.hackathon.com/theme/industry?%24skip=" + page_num * 10
+	}, function(err, response, html){
+		$  = cheerio.load(html)
+		hacks = []
+		var hackaphons = $(".ht-eb-card")
+		hackaphons.each(function(i, hack) {
+			date_container = $(".ht-eb-card__left>.ht-eb-card__date", hack)
+
+			start_day = $(".date--start>.date__day", date_container).text()
+			start_month = $(".date--start>.date__month", date_container).text()
+			end_day = $(".date--end>.date__day", date_container).text()
+			end_month = $(".date--end>.date__month", date_container).text()
+
+			title = $(".ht-eb-card__title", hack).text()
+			location_url = $(".ht-eb-card__location", hack).attr("href")
+			if (location_url == undefined) {
+				address_local = undefined;
+				address_region = undefined;
+			} else {
+				location_parts = location_url.split("/").reverse()
+				address_local = location_parts[0]
+				address_region = location_parts[1]
+			}
+
+			logo_link = $(".ht-eb-card__banner", hack).attr("style").replace("background-image: url(", "").replace(")", "")
+			hacks.push({
+				title: title, 
+				start_date: {
+					day: start_day,
+					month: start_month,
+					year: 2018
+				},
+				end_date: {
+					day: start_day,
+					month: start_month,
+					year: 2018
+				},
+				splash: logo_link,
+				logo: logo_link,
+				address_local: address_local,
+				address_region: address_region
+			})
+		})
+
+		f(hacks, page_num, all_done)
+
+	})
 }
