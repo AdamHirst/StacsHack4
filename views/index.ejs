@@ -36,26 +36,15 @@
     </div>
 
     <div class="container">
-        <div class="gh-card-container">
+        <div id="gh-card-container" class="gh-card-container">
 
-        <% hackathons.forEach(function(hackathon) { %>
-            <div class="gh-card">
-                <div class="gh-card-hero" style="background-image: url('<%- hackathon.splash %>')"></div>
-                <div class="gh-card-logo" style="background-image: url('<%- hackathon.logo %>')"></div>
-                <div class="gh-card-title"><%= hackathon.title %></div>
-                <div class="gh-card-location"><%= hackathon.address_local %>, <%= hackathon.address_region %></div>
-                <div class="gh-card-date"><%= hackathon.date %></div>
-                <!--<div class="gh-card-price"><a class="button is-info is-rounded gh-price gh-price-" disabled>Enter your location for price</a></div> -->
-
-                <div class="gh-card-price"><a class="button is-info is-rounded">Fly from £200</a></div>
-            </div>
-        <% }) %>
-        
         </div>
     </div>
 
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyANNoWpcaXbtXtxCOs5g0RSQfZpRqygsfw&libraries=places"></script>
     <script src='https://api.mapbox.com/mapbox-gl-js/v0.44.2/mapbox-gl.js'></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.js"></script>
+    <script src='/js/gohack.js'></script>
     <script>
         // Mapbox
         mapboxgl.accessToken = 'pk.eyJ1Ijoib3JrYW5uYSIsImEiOiJjaWsydDI4c3MwMzBteDRtNTJxZDB0ZWZwIn0.nM8qc55baG5ZVcZgZKJ_Fg';
@@ -63,6 +52,36 @@
         container: 'map',
         style: 'mapbox://styles/orkanna/cjfpjff7r0gpg2sll20wlc7p4'
         });
+        
+        var market = "";
+        var geoString = "EDI";
+        var rawLocations = [];
+
+        var updatePrices = () => {
+            // Set all buttons up
+            $('.gh-price').addClass('is-loading');
+            $('.gh-price').html('Loading');
+            $('.gh-price').prop("disabled", false);
+
+            // Update the prices
+            function getNext(i) {
+                if (i >= rawLocations.length) return;
+                console.log(rawLocations);
+                getQuotes(market, geoString, rawLocations[i].geoString, rawLocations[i].start_date.year + '-' + rawLocations[i].start_date.month + '-' + rawLocations[i].start_date.day, rawLocations[i].end_date.year + '-' + rawLocations[i].end_date.month + '-' + rawLocations[i].end_date.day, (raw) => {
+                    console.log(raw);
+                    var json = JSON.parse(raw);
+                    
+                    $('#gh-price-button-' + i).removeClass('is-loading');
+                    var minprice = Infinity;
+                    for (var j = 0; j < json.length; j++) {
+                        if (json[j].MinPrice < minprice) minprice = json[j].MinPrice;
+                    }
+                    $('#gh-price-button-' + i).html('Fly from £' + minprice);
+                    getNext(i + 1);
+                });
+            }
+            getNext(0);
+        };
 
         // Google GeoLocation setup
         var input = document.getElementById('location-input');
@@ -73,7 +92,66 @@
             longitude = place.geometry.location.lng();
             
             map.flyTo({center: [longitude, latitude], zoom: 9});
+
+            // Get the country code
+            var country = "";
+            place.address_components.forEach(element => {
+                if (element.types.includes("country")) {
+                    country = element.short_name;
+                }
+            });
+            if (country === "" || country === "GB") country = "UK"; // Just incase demo goes bad!
+            market = country;
+
+            getGeoString(country, place.name, geoString => {
+                geoString = geoString;
+                console.log(geoString);
+                if (geoString == "" || geoString == "{}") geoString = "EDI"; 
+                updatePrices();
+            });
         });
+    
+        function getHackathonTemplate(hackathon) {
+            return `<div id="gh-card-${hackathon.id}" class="gh-card">
+                <div class="gh-card-hero" style="background-image: url('${hackathon.splash}')"></div>
+                <div class="gh-card-logo" style="background-image: url('${hackathon.logo}')"></div>
+                <div class="gh-card-title">${hackathon.title}</div>
+                <div class="gh-card-location">${hackathon.address_local}, ${hackathon.address_region}</div>
+                <div class="gh-card-date">${hackathon.date}</div>
+                <div class="gh-card-price"><a class="button is-info is-rounded gh-price" id="gh-price-button-${hackathon.id}" disabled>Enter your location for price</a></div>
+            </div>`;
+        }
+
+        function updateLocations(locations) {
+            rawLocations = JSON.parse(locations).hackathons;
+            var container = $('#gh-card-container');
+            container.html('');
+            console.log(rawLocations);
+            for (var i = 0; i < rawLocations.length; i++) {
+                rawLocations[i].id = i;
+                if (!rawLocations[i].start_date) {
+                    rawLocations[i].start_date = {
+                        day: '17',
+                        month: '05',
+                        year: '2018'
+                    }
+                }
+                if (!rawLocations[i].end_date) {
+                    rawLocations[i].end_date = {
+                        day: '20',
+                        month: '05',
+                        year: '2018'
+                    }
+                }
+                if (!rawLocations[i].geoString) {
+                    rawLocations[i].geoString = "PARI-sky"
+                }
+                container.append(getHackathonTemplate(rawLocations[i]));
+            }
+        }
+
+        getLocations(updateLocations);
+        
     </script>
 </body>
 </html>
