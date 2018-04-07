@@ -36,8 +36,13 @@ module.exports = {
         request(options, function(err, response, body) {
             if (err) return cb(err);
 
-            if (!body.Places[0].PlaceId) {
-                cb(new Error("No place for string"));
+            body = JSON.parse(body);
+
+            console.log(body.Places.length);
+
+
+            if (body.Places.length < 1) {
+                return cb(new Error("No place for string"));
             }
 
             cb(null, body.Places[0].PlaceId);
