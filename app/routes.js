@@ -1,4 +1,11 @@
 // Routes - Project routes
+var ben = require("./bencode.js")
+var hacks = []
+ben.scrape(doneScraping);
+
+function doneScraping(h) {
+	hacks = h;
+}
 
 module.exports = (app) => {
 
@@ -8,7 +15,7 @@ module.exports = (app) => {
     });
 
     app.get('/hackathons', (req, res) => {
-        res.send({ hackathons: [] });
+        res.send({ hackathons: hacks });
     });
 
 
