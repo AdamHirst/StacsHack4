@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>GoHack | Hackthon travel planner</title>
+    <link rel="stylesheet" href="css/bulma.css" />
+    <link rel="stylesheet" href="css/bulma.css.map" />
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href='https://api.mapbox.com/mapbox-gl-js/v0.44.2/mapbox-gl.css' rel='stylesheet' />
+</head>
+<body>
+    <header>
+        <div class="hero is-bold is-medium gh-hero">
+            <div class="gh-hero-background">
+                <div id="map"></div>
+            </div>
+            <div class="hero-body has-text-centered">
+                <img src="img/logo.png" class="gh-logo-hero" />
+                <h3>Hackthon travel planner</h3>
+
+                <div class="field">
+                    <div class="control gh-loc-control">
+                        <input id="location-input" class="input gh-loc-input" type="text" placeholder="Enter your location">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="section gh-branding gh-section-results">
+        
+    </div>
+
+    <div class="gh-card">
+        <div class="gh-card-hero"></div>
+        <div class="gh-card-logo"></div>
+        <div class="gh-card-title">StacsHack 4</div>
+        <div class="gh-card-price"></div>
+    </div>
+
+
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyANNoWpcaXbtXtxCOs5g0RSQfZpRqygsfw&libraries=places"></script>
+    <script src='https://api.mapbox.com/mapbox-gl-js/v0.44.2/mapbox-gl.js'></script>
+    <script>
+        // Mapbox
+        mapboxgl.accessToken = 'pk.eyJ1Ijoib3JrYW5uYSIsImEiOiJjaWsydDI4c3MwMzBteDRtNTJxZDB0ZWZwIn0.nM8qc55baG5ZVcZgZKJ_Fg';
+        var map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/orkanna/cjfpjff7r0gpg2sll20wlc7p4'
+        });
+
+        // Google GeoLocation setup
+        var input = document.getElementById('location-input');
+        autocomplete = new google.maps.places.Autocomplete(input);
+        google.maps.event.addListener(autocomplete, 'place_changed', function () {
+            var place = autocomplete.getPlace();
+            latitude = place.geometry.location.lat();
+            longitude = place.geometry.location.lng();
+            
+            map.flyTo({center: [longitude, latitude], zoom: 9});
+        });
+    </script>
+</body>
+</html>
