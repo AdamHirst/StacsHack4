@@ -13,33 +13,51 @@
     <link href='https://api.mapbox.com/mapbox-gl-js/v0.44.2/mapbox-gl.css' rel='stylesheet' />
 </head>
 <body>
-    <header>
-        <div class="hero is-bold is-medium gh-hero">
-            <div class="gh-hero-background">
-                <div id="map"></div>
-            </div>
-            <div class="hero-body has-text-centered">
-                <img src="img/logo.png" class="gh-logo-hero" />
-                <h3>Hackthon travel planner</h3>
-
-                <div class="field">
-                    <div class="control gh-loc-control">
-                        <input id="location-input" class="input gh-loc-input" type="text" placeholder="Enter your location">
+    <div id="main-map"></div>
+    
+    <div id="gh-over">
+        <header>
+            <div class="hero is-bold is-medium gh-hero">
+                <div class="gh-hero-background">
+                    <div id="map"></div>
+                </div>
+                <div class="hero-body gh-hero-foreground has-text-centered">
+                    <img src="img/logo.png" class="gh-logo-hero" />
+                    <h3>Hackthon travel planner</h3>
+    
+                    <div class="field">
+                        <div class="control gh-loc-control">
+                            <input id="location-input" class="input gh-loc-input" type="text" placeholder="Enter your location">
+                        </div>
                     </div>
                 </div>
             </div>
+        </header>
+    
+        <div class="section gh-branding gh-section-results has-text-centered">
+            <div class="container">
+                <img src="/img/skyscanner.png" style="height: 96px;">
+            </div>
         </div>
-    </header>
+    
+        <div class="container">
+            <div id="gh-card-container" class="gh-card-container">
+                
+            </div>
+        </div>
+    </div>
 
-    <div class="section gh-branding gh-section-results">
+    <div id="gh-overlay-card" class="gh-card">
         
     </div>
 
-    <div class="container">
-        <div id="gh-card-container" class="gh-card-container">
+    <a class="button is-info gh-back">&lt; Back to results</a>
 
-        </div>
+    <div id="gh-overlay-prices" class="gh-card" style="position: fixed;left: 10px;top: 396px;height: 384px;width: 309.109px;">
+        <ul id="gh-quotes">
+        </ul>
     </div>
+    
 
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyANNoWpcaXbtXtxCOs5g0RSQfZpRqygsfw&libraries=places"></script>
     <script src='https://api.mapbox.com/mapbox-gl-js/v0.44.2/mapbox-gl.js'></script>
@@ -52,10 +70,18 @@
         container: 'map',
         style: 'mapbox://styles/orkanna/cjfpjff7r0gpg2sll20wlc7p4'
         });
+
+        var mainMap = new mapboxgl.Map({
+        container: 'main-map',
+        style: 'mapbox://styles/orkanna/cjfpjff7r0gpg2sll20wlc7p4'
+        });
         
         var market = "";
         var geoString = "EDI";
         var rawLocations = [];
+
+        var operators = [];
+        var places = [];
 
         var updatePrices = () => {
             // Set all buttons up
@@ -68,13 +94,22 @@
                 if (i >= rawLocations.length) return;
                 console.log(rawLocations);
                 getQuotes(market, geoString, rawLocations[i].geoString, rawLocations[i].start_date.year + '-' + rawLocations[i].start_date.month + '-' + rawLocations[i].start_date.day, rawLocations[i].end_date.year + '-' + rawLocations[i].end_date.month + '-' + rawLocations[i].end_date.day, (raw) => {
-                    console.log(raw);
                     var json = JSON.parse(raw);
+
+                    // Parse carriers and places
+                    json.Places.forEach(function(place) {
+                        places[place.PlaceId] = place.Name;
+                    });
+
+                    json.Carriers.forEach(function(carrier) {
+                        operators[carrier.CarrierId] = carrier.Name;
+                    });
                     
                     $('#gh-price-button-' + i).removeClass('is-loading');
+                    rawLocations[i].quotes = json.Quotes;
                     var minprice = Infinity;
-                    for (var j = 0; j < json.length; j++) {
-                        if (json[j].MinPrice < minprice) minprice = json[j].MinPrice;
+                    for (var j = 0; j < json.Quotes.length; j++) {
+                        if (json.Quotes[j].MinPrice < minprice) minprice = json.Quotes[j].MinPrice;
                     }
                     $('#gh-price-button-' + i).html('Fly from £' + minprice);
                     getNext(i + 1);
@@ -118,8 +153,47 @@
                 <div class="gh-card-title">${hackathon.title}</div>
                 <div class="gh-card-location">${hackathon.address_local}, ${hackathon.address_region}</div>
                 <div class="gh-card-date">${hackathon.date}</div>
-                <div class="gh-card-price"><a class="button is-info is-rounded gh-price" id="gh-price-button-${hackathon.id}" disabled>Enter your location for price</a></div>
+                <div class="gh-card-price"><a class="button is-info is-rounded gh-price" id="gh-price-button-${hackathon.id}" onclick='return openMapWithButton(${hackathon.id});' disabled>Enter your location for price</a></div>
             </div>`;
+        }
+
+        function getFlightTemplate(flight) {
+            return `<li class="gh-flight" style="
+    border-bottom: #eee 2px solid;
+    padding: 20px;
+    text-align: left;
+">
+    <div style="display: inline-block">
+        
+    <div class="gh-flight-fromto">${places[flight.OutboundLeg.OriginId]} - ${places[flight.OutboundLeg.DestinationId]}</div>
+    <div class="gh-flight-operator" style="
+    font-size: 14px;
+">${operators[flight.OutboundLeg.CarrierIds[0]]}</div>
+    <div class="gh-flight-date" style="
+    display: inline-block;
+    font-size: 12px;
+    /* margin-top: -11px; */
+">${new Date(flight.OutboundLeg.DepartureDate).toDateString()}</div>
+    <div class="gh-flight-time" style="
+    display: inline-block;
+    font-size: 12px;
+">${new Date(flight.OutboundLeg.DepartureDate).toTimeString()}</div>
+
+    </div>
+    <div class="gh-flight-price" style="float: right;"><a class="button is-info is-rounded">£45</a></div>
+</li>`;
+        }
+
+        function openMapWithButton(hackathon) {
+            transitionToMap($('#gh-card-' + hackathon));
+            
+            var el = $("#gh-quotes");
+            el.html('');
+
+            locations[hackathon].quotes.forEach(function(quote) {
+                el.append(getFlightTemplate(quote));
+            });
+
         }
 
         function updateLocations(locations) {
@@ -149,6 +223,45 @@
                 container.append(getHackathonTemplate(rawLocations[i]));
             }
         }
+
+        function transitionToMap(element) {
+            // Get element pos
+            var rect = element[0].getBoundingClientRect();
+
+            var nEl = $('#gh-overlay-card');
+
+            element.css('visibility', 'hidden');
+
+            nEl.html(element.html());
+
+            nEl.css('display', 'block');
+            nEl.css('position', 'fixed');
+            nEl.css('left', rect.left);
+            nEl.css('top', rect.top);
+            nEl.css('height', rect.height);
+            nEl.css('width', rect.width);
+            $('#gh-overlay-prices').css('width', rect.width);
+            nEl.animate({
+                left: 10,
+                top: 0
+            }, 1000, function() {
+                element.css('visibility', 'visible');
+                $('.gh-back').fadeIn();
+                $('#gh-overlay-prices').fadeIn();
+            });
+            $('#gh-over').fadeOut();
+        }
+
+        function closeMap() {
+            var nEl = $('#gh-overlay-card');
+            nEl.html('');
+            nEl.css('display', 'none');
+            $('#gh-over').fadeIn();
+            $('.gh-back').fadeOut();
+            $('#gh-overlay-prices').fadeOut();
+        }
+
+        $('.gh-back').click(closeMap);
 
         getLocations(updateLocations);
         

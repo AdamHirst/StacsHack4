@@ -1,7 +1,12 @@
 /* Style.css - Custom styles */
 
+#gh-over {
+    background-color: #fff;
+}
+
 .gh-branding {
     background-color: #009CE0;
+    padding: 0;
 }
 
 .gh-logo-hero {
@@ -14,16 +19,27 @@
     bottom: 0;
     left: 0;
     position: absolute;
-    z-index: -100;
+    z-index: 0;
     height: 514px;
     overflow: hidden;
     opacity: 0.5;
     filter: grayscale()
 }
 
+.gh-hero-foreground {
+    z-index: 100;
+}
+
 #map {
     width: 100%;
     height: 100%;
+}
+
+#main-map {
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    z-index: -1000;
 }
 
 .gh-loc-control {
@@ -58,6 +74,16 @@
     display: grid;
     grid-template-columns: 23% 23% 23% 23%;
     grid-gap: 2%;
+    margin-left: 30px;
+}
+
+.gh-back {
+    position: fixed;
+    top: 30px;
+    left: 20px;
+    z-index: 9999;
+    font-size: 14px;
+    display: none;
 }
 
 .gh-card-hero {
@@ -87,4 +113,14 @@
     margin-top:10px;
     text-align: center;
     color: #009CE0;
+}
+
+#gh-overlay-card {
+    display: none;
+    z-index: 1000;
+}
+
+#gh-overlay-prices {
+    z-index: -100;
+    display: none;
 }

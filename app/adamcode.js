@@ -19,7 +19,7 @@ module.exports = {
         request(options, function(err, response, body) {
             if (err) return cb(err);
 
-            cb(null, JSON.parse(body).Quotes);
+            cb(null, JSON.parse(body));
         });
     },
 
