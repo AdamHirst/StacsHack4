@@ -11,7 +11,7 @@ module.exports = (app) => {
 
     // Index page
     app.get('/', (req, res) => {
-        res.send('Hello world!');
+        res.render('index', { hackathons: hacks })
     });
 
     app.get('/hackathons', (req, res) => {

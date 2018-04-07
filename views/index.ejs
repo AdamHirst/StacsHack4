@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="css/bulma.css.map" />
     <link rel="stylesheet" href="css/style.css" />
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href="https://fonts.googleapis.com/css?family=Titillium+Web" rel="stylesheet">
     <link href='https://api.mapbox.com/mapbox-gl-js/v0.44.2/mapbox-gl.css' rel='stylesheet' />
 </head>
 <body>
@@ -34,13 +35,24 @@
         
     </div>
 
-    <div class="gh-card">
-        <div class="gh-card-hero"></div>
-        <div class="gh-card-logo"></div>
-        <div class="gh-card-title">StacsHack 4</div>
-        <div class="gh-card-price"></div>
-    </div>
+    <div class="container">
+        <div class="gh-card-container">
 
+        <% hackathons.forEach(function(hackathon) { %>
+            <div class="gh-card">
+                <div class="gh-card-hero" style="background-image: url('<%- hackathon.splash %>')"></div>
+                <div class="gh-card-logo" style="background-image: url('<%- hackathon.logo %>')"></div>
+                <div class="gh-card-title"><%= hackathon.title %></div>
+                <div class="gh-card-location"><%= hackathon.address_local %>, <%= hackathon.address_region %></div>
+                <div class="gh-card-date"><%= hackathon.date %></div>
+                <!--<div class="gh-card-price"><a class="button is-info is-rounded gh-price gh-price-" disabled>Enter your location for price</a></div> -->
+
+                <div class="gh-card-price"><a class="button is-info is-rounded">Fly from £200</a></div>
+            </div>
+        <% }) %>
+        
+        </div>
+    </div>
 
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyANNoWpcaXbtXtxCOs5g0RSQfZpRqygsfw&libraries=places"></script>
     <script src='https://api.mapbox.com/mapbox-gl-js/v0.44.2/mapbox-gl.js'></script>
