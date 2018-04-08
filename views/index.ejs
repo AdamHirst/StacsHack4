@@ -161,8 +161,11 @@
                 var dayEnd = rawLocations[i].end_date.day;
                 if (dayStart.length == 1) dayStart = '0' + dayStart;
 			    if (dayEnd.length == 1) dayEnd = '0' + dayEnd;
+
+                var outboundDate = rawLocations[i].start_date.year + '-' + rawLocations[i].start_date.month + '-' + dayStart;
+                var inboundDate = rawLocations[i].end_date.year + '-' + rawLocations[i].end_date.month + '-' + dayEnd;
                 
-                getQuotes(market, geoString, rawLocations[i].geoString, rawLocations[i].start_date.year + '-' + rawLocations[i].start_date.month + '-' + dayStart, rawLocations[i].end_date.year + '-' + rawLocations[i].end_date.month + '-' + dayEnd, (raw) => {
+                getQuotes(market, geoString, rawLocations[i].geoString, outboundDate, inboundDate, (raw) => {
                     var json = JSON.parse(raw);
                     // Parse carriers and places
                     json.Places.forEach(function(place) {
@@ -288,11 +291,16 @@ function runAnimation() {
         }
     
         function getHackathonTemplate(hackathon) {
+            if (hackathon.address_local === undefined || hackathon.address_region === undefined) {
+                var location = "See event details"
+            } else {
+                var location = `${hackathon.address_local}, ${hackathon.address_region}`
+            }
             return `<div id="gh-card-${hackathon.id}" class="gh-card">
                 <div class="gh-card-hero" style="background-image: url('${hackathon.splash}')"></div>
                 <div class="gh-card-logo" style="background-image: url('${hackathon.logo}')"></div>
                 <div class="gh-card-title">${hackathon.title}</div>
-                <div class="gh-card-location">${hackathon.address_local}, ${hackathon.address_region}</div>
+                <div class="gh-card-location">${location}</div>
                 <div class="gh-card-date">${getDateStr(hackathon.start_date.month)} ${hackathon.start_date.day}-${hackathon.end_date.day} ${hackathon.start_date.year}</div>
                 <div class="gh-card-price"><a class="button is-info is-rounded gh-price" id="gh-price-button-${hackathon.id}" onclick='return openMapWithButton(${hackathon.id});' disabled>Enter your location for price</a></div>
             </div>`;
@@ -316,27 +324,54 @@ function runAnimation() {
     font-size: 12px;
     /* margin-top: -11px; */
 ">${new Date(flight.OutboundLeg.DepartureDate).toDateString()}</div>
-    <div class="gh-flight-time" style="
-    display: inline-block;
-    font-size: 12px;
-">${new Date(flight.OutboundLeg.DepartureDate).toTimeString()}</div>
 
     </div>
     <div class="gh-flight-price" style="float: right;"><a class="button is-info is-rounded">£${flight.MinPrice}</a></div>
 </li>`;
         }
 
+        function refferToSkyscanner(hackathon) {
+            var dayStart = rawLocations[hackathon].start_date.day;
+            var dayEnd = rawLocations[hackathon].end_date.day;
+            if (dayStart.length == 1) dayStart = '0' + dayStart;
+            if (dayEnd.length == 1) dayEnd = '0' + dayEnd;
+
+            var outboundDate = rawLocations[hackathon].start_date.year + '-' + rawLocations[hackathon].start_date.month + '-' + dayStart;
+            var inboundDate = rawLocations[hackathon].end_date.year + '-' + rawLocations[hackathon].end_date.month + '-' + dayEnd;
+            
+            getReferralLink(market, geoString, rawLocations[hackathon].geoString, outboundDate, inboundDate).then(function(link) {
+                window.location.href = link;
+            });
+        }
+
         function openMapWithButton(hackathon) {
             if ($("#gh-price-button-" + hackathon).attr('disabled') == undefined) {
-                transitionToMap($('#gh-card-' + hackathon));
+                transitionToMap(hackathon, $('#gh-card-' + hackathon));
             
                 var el = $("#gh-quotes");
                 el.html('');
                 
-                var loc = rawLocations[hackathon].location;
-                activeLine = getArc(latitude, longitude, loc.latitude, loc.longitude);
-                geojson.features = [];
-                runAnimation();
+                if (rawLocations[hackathon].location) {
+                    var loc = rawLocations[hackathon].location;
+                    activeLine = getArc(latitude, longitude, loc.latitude, loc.longitude);
+                    geojson.features = [];
+                    runAnimation();
+                }
+            // // Pressed da button and already in map view???
+            // if (window.location.hash == "#map") {
+            //     // Ayy
+            //     console.log("going...")
+            //     getReferralLink(market, geoString, rawLocations[hackathon].geoString, outboundDate, inboundDate).then(function(link) {
+            //         window.location.href = link; // Redirect
+            //         console.log(" gone")
+            //     });
+            // }
+
+            // // fuck it we're map view now
+            // window.location.hash = "map"
+
+            var el = $("#gh-quotes");
+            el.html('');
 
                 rawLocations[hackathon].quotes.forEach(function(quote) {
                     el.append(getFlightTemplate(quote));
@@ -370,6 +405,9 @@ function runAnimation() {
                     geojson.features = [];
                     var e2 = $("#gh-quotes");
                     e2.html('');
+
+                    $('#gh-overlay-card').find('a').attr('onclick', 'refferToSkyscanner(' + marker.properties['gh-id'] + ')');
+                    e2.find('a').attr('onclick', 'refferToSkyscanner(' + marker.properties['gh-id'] + ')');
 
                     rawLocations[marker.properties['gh-id']].quotes.forEach(function(quote) {
                         e2.append(getFlightTemplate(quote));
@@ -415,7 +453,7 @@ function runAnimation() {
         });
 
 
-        function transitionToMap(element) {
+        function transitionToMap(hackathon, element) {
             // Get element pos
             var rect = element[0].getBoundingClientRect();
 
@@ -424,6 +462,9 @@ function runAnimation() {
             element.css('visibility', 'hidden');
 
             nEl.html(element.html());
+
+            nEl.find('a').attr('onclick', 'refferToSkyscanner(' + hackathon + ')');
+            $("#gh-flight-price").find('a').attr('onclick', 'refferToSkyscanner(' + hackathon + ')');
 
             nEl.css('display', 'block');
             nEl.css('position', 'fixed');
@@ -444,6 +485,8 @@ function runAnimation() {
         }
 
         function closeMap() {
+            window.location.hash = ""
+
             var nEl = $('#gh-overlay-card');
             nEl.html('');
             nEl.css('display', 'none');
