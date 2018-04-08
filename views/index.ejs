@@ -15,6 +15,10 @@
 <body>
     <div id="main-map"></div>
     
+    <div class="gh-logo-overlay" style="z-index: -50; position: fixed;right: 20px;top: 20px;height: 100px;width: 180px;display: block;">
+    <img src="/img/logo.png">
+    </div>
+
     <div id="gh-over">
         <header>
             <div class="hero is-bold is-medium gh-hero">
@@ -54,16 +58,25 @@
     <a class="button is-info gh-back">&lt; Back to results</a>
 
     <div id="gh-overlay-prices" class="gh-card" style="position: fixed;left: 10px;top: 396px;height: 384px;width: 309.109px;">
-        <ul id="gh-quotes">
+        <ul id="gh-quotes" style="overflow-y: scroll; height: 384px">
         </ul>
     </div>
     
 
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyANNoWpcaXbtXtxCOs5g0RSQfZpRqygsfw&libraries=places"></script>
     <script src='https://api.mapbox.com/mapbox-gl-js/v0.44.2/mapbox-gl.js'></script>
+    <script src='https://api.mapbox.com/mapbox.js/plugins/arc.js/v0.1.0/arc.js'></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.js"></script>
     <script src='/js/gohack.js'></script>
     <script>
+    function getArc(lat1, lon1, lat2, lon2) {
+        var start = { x: lat1, y: lon1 };
+        var end = { x: lat2, y: lon2 };
+        var generator = new arc.GreatCircle(start, end, {'name': 'ArcGen'});
+        var line = generator.Arc(100,{offset:10});
+        return line;
+    }
+
         // Mapbox
         mapboxgl.accessToken = 'pk.eyJ1Ijoib3JrYW5uYSIsImEiOiJjaWsydDI4c3MwMzBteDRtNTJxZDB0ZWZwIn0.nM8qc55baG5ZVcZgZKJ_Fg';
         var map = new mapboxgl.Map({
@@ -75,6 +88,8 @@
         container: 'main-map',
         style: 'mapbox://styles/orkanna/cjfpjff7r0gpg2sll20wlc7p4'
         });
+
+        var pairs = [];
         
         var market = "";
         var geoString = "EDI";
@@ -82,6 +97,56 @@
 
         var operators = {};
         var places = {};
+        var resetTime = false;
+        var perfAnim = false;
+        var latitude = 0;
+        var longitude = 0;
+
+        var geojson_markers = {
+            "type": "FeatureCollection",
+            "features": []
+        };
+
+        var geojson = {
+            "type": "FeatureCollection",
+            "features": []
+        };
+
+        function addGeoJsonFeature(image, latlng, id) {
+            geojson_markers.features.push({
+                "type": "Feature",
+                "properties": {
+                    "image": image,
+                    "iconSize": [40, 40],
+                    "gh-id": id
+                },
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [
+                        latlng.longitude, latlng.latitude
+                    ]
+                }
+            });
+        }
+        mainMap.on('load', function() {
+            mainMap.addLayer({
+                'id': 'line-animation',
+                'type': 'line',
+                'source': {
+                    'type': 'geojson',
+                    'data': geojson
+                },
+                'layout': {
+                    'line-cap': 'round',
+                    'line-join': 'round'
+                },
+                'paint': {
+                    'line-color': '#009CE0',
+                    'line-width': 4,
+                    'line-opacity': .8
+                }
+            });
+        });
 
         var updatePrices = () => {
             // Set all buttons up
@@ -99,7 +164,6 @@
                 
                 getQuotes(market, geoString, rawLocations[i].geoString, rawLocations[i].start_date.year + '-' + rawLocations[i].start_date.month + '-' + dayStart, rawLocations[i].end_date.year + '-' + rawLocations[i].end_date.month + '-' + dayEnd, (raw) => {
                     var json = JSON.parse(raw);
-                    console.log(raw);
                     // Parse carriers and places
                     json.Places.forEach(function(place) {
                         places[place.PlaceId] = place.Name;
@@ -115,12 +179,67 @@
                     for (var j = 0; j < json.Quotes.length; j++) {
                         if (json.Quotes[j].MinPrice < minprice) minprice = json.Quotes[j].MinPrice;
                     }
-                    $('#gh-price-button-' + i).html('Fly from £' + minprice);
+                    if (minprice == Infinity) {
+                        $('#gh-price-button-' + i).html('No flights found :\'(');
+                        $('#gh-price-button-' + i).removeClass('is-info');
+                        $('#gh-price-button-' + i).addClass('is-danger');
+                        $('#gh-price-button-' + i).attr('disabled', true);
+                    } else {
+                        $('#gh-price-button-' + i).html('Fly from £' + minprice);
+                    }
+                    
                     getNext(i + 1);
                 });
             }
             getNext(0);
         };
+
+        var lineStatus = 0;
+
+        var activeLine;
+
+function animateLine() {
+    if (!perfAnim) return;
+
+    if (lineStatus >= 3*activeLine.geometries[0].coords.length) {
+        lineStatus = 0;
+    }
+
+    if (geojson.features.length == 0) {
+        geojson.features.push({
+            "type": "Feature",
+            "geometry": {
+                "type": "LineString",
+                "properties": {
+                    "name": activeLine.properties.name
+                },
+                "coordinates": [
+                    [activeLine.geometries[0].coords[0][1], activeLine.geometries[0].coords[0][0]]
+                ]
+            }
+        });
+    }
+    
+    if (lineStatus >= 2*activeLine.geometries[0].coords.length) {
+        geojson.features[0].geometry.coordinates = geojson.features[0].geometry.coordinates.slice(1)
+    } else if (lineStatus < activeLine.geometries[0].coords.length) {
+        var x = activeLine.geometries[0].coords[lineStatus][0];
+        var y = activeLine.geometries[0].coords[lineStatus][1];
+        geojson.features[0].geometry.coordinates.push([y, x]); 
+    }
+
+    mainMap.getSource('line-animation').setData(geojson);
+
+    setTimeout(() => { animateLine(); }, 10);
+    lineStatus += 1;
+}
+
+function runAnimation() {
+    if (!perfAnim) {
+        perfAnim = true;
+        animateLine();
+    }
+}
 
         // Google GeoLocation setup
         var input = document.getElementById('location-input');
@@ -148,6 +267,8 @@
                 updatePrices();
             });
         });
+
+
 
         function getDateStr(num) {
             switch (num) {
@@ -182,8 +303,9 @@
     border-bottom: #eee 2px solid;
     padding: 20px;
     text-align: left;
+    padding-right: 10px;
 ">
-    <div style="display: inline-block">
+    <div class="gh-flight-info" style="display: inline-block">
         
     <div class="gh-flight-fromto">${places[flight.OutboundLeg.OriginId]} - ${places[flight.OutboundLeg.DestinationId]}</div>
     <div class="gh-flight-operator" style="
@@ -200,20 +322,60 @@
 ">${new Date(flight.OutboundLeg.DepartureDate).toTimeString()}</div>
 
     </div>
-    <div class="gh-flight-price" style="float: right;"><a class="button is-info is-rounded">£45</a></div>
+    <div class="gh-flight-price" style="float: right;"><a class="button is-info is-rounded">£${flight.MinPrice}</a></div>
 </li>`;
         }
 
         function openMapWithButton(hackathon) {
-            transitionToMap($('#gh-card-' + hackathon));
+            if ($("#gh-price-button-" + hackathon).attr('disabled') == undefined) {
+                transitionToMap($('#gh-card-' + hackathon));
             
-            var el = $("#gh-quotes");
-            el.html('');
+                var el = $("#gh-quotes");
+                el.html('');
+                
+                var loc = rawLocations[hackathon].location;
+                activeLine = getArc(latitude, longitude, loc.latitude, loc.longitude);
+                geojson.features = [];
+                runAnimation();
 
-            rawLocations[hackathon].quotes.forEach(function(quote) {
-                el.append(getFlightTemplate(quote));
+                rawLocations[hackathon].quotes.forEach(function(quote) {
+                    el.append(getFlightTemplate(quote));
+                });
+            }
+        }
+
+        var selected = 0;
+
+        function updateMarkers() {
+            geojson_markers.features.forEach(marker => {
+                var el = document.createElement('div');
+                el.className = "gh-marker"
+                
+                var img = marker.properties.image;
+                el.style.backgroundImage = `url(${img})`;
+                el.style.width = marker.properties.iconSize[0] + 'px';
+                el.style.height = marker.properties.iconSize[1] + 'px';
+                el.id = 'gh-id-' + marker.properties['gh-id'];
+
+                new mapboxgl.Marker(el).setLngLat(marker.geometry.coordinates).addTo(mainMap);
+            
+                $('#gh-id-' + marker.properties['gh-id']).click(() => {
+                    $('#gh-id-' + selected).css('border-color', '#FFFFFF');
+                    $('#gh-id-' + marker.properties['gh-id']).css('border-color', '#009CE0');
+                    selected = marker.properties['gh-id'];
+                    $('#gh-overlay-card').html($("#gh-card-" + marker.properties['gh-id']).html());
+                
+                    var loc = rawLocations[marker.properties['gh-id']].location;
+                    activeLine = getArc(latitude, longitude, loc.latitude, loc.longitude);
+                    geojson.features = [];
+                    var e2 = $("#gh-quotes");
+                    e2.html('');
+
+                    rawLocations[marker.properties['gh-id']].quotes.forEach(function(quote) {
+                        e2.append(getFlightTemplate(quote));
+                    });
+                });
             });
-
         }
 
         function updateLocations(locations) {
@@ -222,6 +384,7 @@
             container.html('');
             for (var i = 0; i < rawLocations.length; i++) {
                 rawLocations[i].id = i;
+                
                 if (!rawLocations[i].start_date) {
                     rawLocations[i].start_date = {
                         day: '17',
@@ -240,8 +403,17 @@
                     rawLocations[i].geoString = "PARI-sky"
                 }
                 container.append(getHackathonTemplate(rawLocations[i]));
+                
+                if (rawLocations[i].location != null) addGeoJsonFeature(rawLocations[i].logo, rawLocations[i].location, i);
             }
+
+            updateMarkers();
         }
+
+        mainMap.on('click', 'symbols', function (e) {
+            map.flyTo({center: e.features[0].geometry.coordinates});
+        });
+
 
         function transitionToMap(element) {
             // Get element pos
@@ -285,5 +457,6 @@
         getLocations(updateLocations);
         
     </script>
+    <script src="/js/flightpath.js"></script>
 </body>
 </html>

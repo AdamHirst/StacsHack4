@@ -6,6 +6,7 @@ var needsUpdate = true;
 var geostrings = {};
 var countries = {};
 var validCCodes = [];
+var latlngs = {};
 
 // populate countries
 adam.getCountries((err, cs) => {
@@ -39,8 +40,17 @@ const updateHackathons = (cb) => {
                     } else {
                         hackathon.geoString = 'PARI-sky';
                     }
+                }   
+            }
+            if (latlngs[hackathon.address_local]) {
+                hackathon.location = latlngs[hackathon.address_local];
+            } else {
+                if (hackathon.address_local && hackathon.address_region) {
+                    require('./geocode').geocode(hackathon.address_local.toLowerCase().replace('-', ' ') + ', ' + hackathon.address_region.toLowerCase().replace('-', ' '), (latlng) => {
+                        latlngs[hackathon.address_local] = latlng;
+                        hackathon.location = latlng;
+                    });
                 }
-                    
             }
         });
 
