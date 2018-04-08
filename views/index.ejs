@@ -80,19 +80,24 @@
         var geoString = "EDI";
         var rawLocations = [];
 
-        var operators = [];
-        var places = [];
+        var operators = {};
+        var places = {};
 
         var updatePrices = () => {
             // Set all buttons up
             $('.gh-price').addClass('is-loading');
             $('.gh-price').html('Loading');
-            $('.gh-price').prop("disabled", false);
+            $('.gh-price').attr("disabled", false);
 
             // Update the prices
             function getNext(i) {
                 if (i >= rawLocations.length) return;
-                getQuotes(market, geoString, rawLocations[i].geoString, rawLocations[i].start_date.year + '-' + rawLocations[i].start_date.month + '-' + rawLocations[i].start_date.day, rawLocations[i].end_date.year + '-' + rawLocations[i].end_date.month + '-' + rawLocations[i].end_date.day, (raw) => {
+                var dayStart = rawLocations[i].start_date.day;
+                var dayEnd = rawLocations[i].end_date.day;
+                if (dayStart.length == 1) dayStart = '0' + dayStart;
+			    if (dayEnd.length == 1) dayEnd = '0' + dayEnd;
+                
+                getQuotes(market, geoString, rawLocations[i].geoString, rawLocations[i].start_date.year + '-' + rawLocations[i].start_date.month + '-' + dayStart, rawLocations[i].end_date.year + '-' + rawLocations[i].end_date.month + '-' + dayEnd, (raw) => {
                     var json = JSON.parse(raw);
                     console.log(raw);
                     // Parse carriers and places
@@ -205,7 +210,7 @@
             var el = $("#gh-quotes");
             el.html('');
 
-            locations[hackathon].quotes.forEach(function(quote) {
+            rawLocations[hackathon].quotes.forEach(function(quote) {
                 el.append(getFlightTemplate(quote));
             });
 

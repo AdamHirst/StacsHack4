@@ -1,13 +1,49 @@
 // Routes - Project routes
+const adam = require('./adamcode.js');
 var ben = require("./bencode.js")
 var hacks = [];
 var needsUpdate = true;
+var geostrings = {};
+var countries = {};
+var validCCodes = [];
+
+// populate countries
+adam.getCountries((err, cs) => {
+    cs.forEach(country => {
+        countries[country.Name.toLowerCase()] = country.Code.toLowerCase();
+        validCCodes.push(country.Code.toLowerCase());
+    });
+});
 
 const updateHackathons = (cb) => {
     needsUpdate = false;
     ben.scrape(hackathons => {
         hacks = hackathons;
         
+        hacks.forEach(hackathon => {
+            if (geostrings[hackathon.address_local]) {
+                hackathon.geoString = geostrings[hackathon.address_local];
+            } else {
+                if (!hackathon.address_region) {
+                    hackathon.geoString = 'PARI-sky';
+                } else {
+                    var country = hackathon.address_region.toLowerCase().replace('-', ' ');
+                    
+                    if (country.length > 2) country = countries[country];
+                    console.log(validCCodes.includes(country));
+                    if (validCCodes.includes(country)) {
+                        adam.getGeolocatedString(country.toUpperCase(), hackathon.address_local.toLowerCase().replace('-', ' '), (err, glString) => {
+                            geostrings[hackathon.address_local] = glString;
+                            hackathon.geoString = glString;
+                        });
+                    } else {
+                        hackathon.geoString = 'PARI-sky';
+                    }
+                }
+                    
+            }
+        });
+
         setTimeout(() => {
             needsUpdate = true;
         }, 1000 * 60 * 60);
@@ -25,7 +61,6 @@ const getHackathons = (cb) => {
     }
 }
 
-const adam = require('./adamcode.js');
 
 module.exports = (app) => {
 
