@@ -103,6 +103,17 @@ function getDateNum(str) {
 	}
 }
 
+// https://stackoverflow.com/questions/4878756/how-to-capitalize-first-letter-of-each-word-like-a-2-word-city/4878797
+function toTitleCase(str){
+    return str.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
+}
+
+
+function formatAddress(address) {
+	address = address.replace("-", " ");
+	return toTitleCase(address)
+}
+
 function scrapeHackathonCom(cb, page_num) {
 	if (!page_num) page_num = 0;
 
@@ -127,8 +138,8 @@ function scrapeHackathonCom(cb, page_num) {
 				address_region = undefined;
 			} else {
 				location_parts = location_url.split("/").reverse()
-				address_local = location_parts[0]
-				address_region = location_parts[1]
+				address_local = formatAddress(location_parts[0])
+				address_region = formatAddress(location_parts[1])
 			}
 
 			start_month = getDateNum(start_month);
