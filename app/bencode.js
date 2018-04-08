@@ -4,8 +4,30 @@ require('ssl-root-cas').inject();
 var fs = require("fs")
 
 module.exports =  {
-	"scrape": scrape,
+	"scrape": scrapeAll,
+	"scrapeMLH": scrape,
 	"scrapeHackathonCom" : scrapeHackathonCom
+}
+
+function scrapeAll(cb) {
+	scrape(mlhHackathons => {
+		scrapeHackathonCom(hackathonCom => {
+			mlhHackathons.push(...hackathonCom);
+
+			function comparator(a, b) {
+				var aDate = new Date();
+				var aD = aDate.setFullYear(a.start_date.year, parseInt(a.start_date.month)-1, a.start_date.day);
+				var bDate = new Date();
+				var bD = bDate.setFullYear(b.start_date.year, parseInt(b.start_date.month)-1, b.start_date.day);
+				return aD > bD ? 1 : -1;
+			}
+
+			mlhHackathons.sort(comparator);
+
+
+			cb(mlhHackathons);
+		})
+	})
 }
 
 function scrape(f) {
@@ -31,16 +53,27 @@ function scrape(f) {
 			} else {
 				end_day = end_day_m[0]
 			}
-			
+
+			month = getDateNum(month);
+
+			if (month.length == 1) month = '0' + month;
+
+			var aDate = new Date();
+			var year = new Date().getFullYear();
+			var aD = aDate.setFullYear(year, parseInt(month)-1, start_day);
+			if (aD < Date.now()) year = year + 1;
+
 			hacks.push({
 				"title": $("h3", inner).text(),
 				"start_date": {
 					"day" : start_day,
-					"month": month
+					"month": month,
+					"year": year
 				},
 				"end_date": {
 					"day": end_day,
-					"month": month
+					"month": month,
+					"year": year
 				},
 				"splash" : $("div.image-wrap>img", inner).attr("src"),
 				"logo" : $("div.event-logo>img", inner).attr("src"),
@@ -51,6 +84,23 @@ function scrape(f) {
 
 		f(hacks)
 	})	
+}
+
+function getDateNum(str) {
+	switch (str) {
+		case 'Jan': return '01';
+		case 'Feb': return '02';
+		case 'Mar': return '03';
+		case 'Apr': return '04';
+		case 'May': return '05';
+		case 'Jun': return '06';
+		case 'Jul': return '07';
+		case 'Aug': return '08';
+		case 'Sep': return '09';
+		case 'Oct': return '10';
+		case 'Nov': return '11';
+		case 'Dec': return '12';
+	}
 }
 
 function scrapeHackathonCom(cb, page_num) {
@@ -81,18 +131,28 @@ function scrapeHackathonCom(cb, page_num) {
 				address_region = location_parts[1]
 			}
 
+			start_month = getDateNum(start_month);
+
+			if (start_month.length == 1) start_month = '0' + start_month;
+			
+			var aDate = new Date();
+			var year = new Date().getFullYear();
+			var aD = aDate.setFullYear(year, parseInt(start_month)-1, start_day);
+			if (aD < Date.now()) year = year + 1;
+
+			//console.log(title + ': ' + aD + ', ' + Date.now());
 			logo_link = $(".ht-eb-card__banner", hack).attr("style").replace("background-image: url(", "").replace(")", "")
 			hacks.push({
 				title: title, 
 				start_date: {
 					day: start_day,
 					month: start_month,
-					year: 2018
+					year: year
 				},
 				end_date: {
 					day: start_day,
 					month: start_month,
-					year: 2018
+					year: year
 				},
 				splash: logo_link,
 				logo: logo_link,
@@ -101,10 +161,12 @@ function scrapeHackathonCom(cb, page_num) {
 			})
 		})
 
-		if (hacks.length != 0) {
-			scrapeHackathonCom(page_num++, newHacks => {
+		console.log(page_num);
+
+		if (hacks.length != 0) { // More to come?
+			scrapeHackathonCom(newHacks => {
 				hacks.push(...newHacks);
-			});
+			}, page_num + 1);
 		}
 
 		cb(hacks)

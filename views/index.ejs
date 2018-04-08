@@ -143,6 +143,23 @@
                 updatePrices();
             });
         });
+
+        function getDateStr(num) {
+            switch (num) {
+                case '01': return 'January';
+                case '02': return 'Febuary';
+                case '03': return 'March';
+                case '04': return 'April';
+                case '05': return 'May';
+                case '06': return 'June';
+                case '07': return 'July';
+                case '08': return 'August';
+                case '09': return 'September';
+                case '10': return 'October';
+                case '11': return 'November';
+                case '12': return 'December';
+            }
+        }
     
         function getHackathonTemplate(hackathon) {
             return `<div id="gh-card-${hackathon.id}" class="gh-card">
@@ -150,7 +167,7 @@
                 <div class="gh-card-logo" style="background-image: url('${hackathon.logo}')"></div>
                 <div class="gh-card-title">${hackathon.title}</div>
                 <div class="gh-card-location">${hackathon.address_local}, ${hackathon.address_region}</div>
-                <div class="gh-card-date">${hackathon.date}</div>
+                <div class="gh-card-date">${getDateStr(hackathon.start_date.month)} ${hackathon.start_date.day}-${hackathon.end_date.day} ${hackathon.start_date.year}</div>
                 <div class="gh-card-price"><a class="button is-info is-rounded gh-price" id="gh-price-button-${hackathon.id}" onclick='return openMapWithButton(${hackathon.id});' disabled>Enter your location for price</a></div>
             </div>`;
         }

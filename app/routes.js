@@ -5,7 +5,6 @@ var needsUpdate = true;
 
 const updateHackathons = (cb) => {
     needsUpdate = false;
-
     ben.scrape(hackathons => {
         hacks = hackathons;
         
