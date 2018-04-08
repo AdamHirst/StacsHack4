@@ -298,12 +298,19 @@ function runAnimation() {
             } else {
                 var location = `${hackathon.address_local}, ${hackathon.address_region}`
             }
+
+            if (hackathon.start_date.day === hackathon.end_date.day) {
+                var date = `${hackathon.start_date.day} ${getDateStr(hackathon.start_date.month)} ${hackathon.start_date.year}`
+            } else {
+                var date = `${hackathon.start_date.day}-${hackathon.end_date.day} ${getDateStr(hackathon.start_date.month)} ${hackathon.start_date.year}`
+            }
+
             return `<div id="gh-card-${hackathon.id}" class="gh-card">
                 <div class="gh-card-hero" style="background-image: url('${hackathon.splash}')"></div>
                 <div class="gh-card-logo" style="background-image: url('${hackathon.logo}')"></div>
                 <div class="gh-card-title">${hackathon.title}</div>
                 <div class="gh-card-location">${location}</div>
-                <div class="gh-card-date">${getDateStr(hackathon.start_date.month)} ${hackathon.start_date.day}-${hackathon.end_date.day} ${hackathon.start_date.year}</div>
+                <div class="gh-card-date"> ${date}</div>
                 <div class="gh-card-price"><a class="button is-info is-rounded gh-price" id="gh-price-button-${hackathon.id}" onclick='return openMapWithButton(${hackathon.id});' disabled>Enter your location for price</a></div>
             </div>`;
         }
