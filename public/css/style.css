@@ -53,6 +53,10 @@
     font-size: 20px;
 }
 
+.gh-flight-info {
+    max-width: 180px;
+}
+
 
 /* Cards */
 .gh-card {
@@ -92,7 +96,7 @@
 }
 
 .gh-card-logo {
-    border: solid 2px #fff;
+    border: solid 9px #fff;
     background-size: cover;
     border-radius: 100%;
     margin: auto;
@@ -123,4 +127,12 @@
 #gh-overlay-prices {
     z-index: -100;
     display: none;
+}
+
+.gh-marker {
+    width: 50px;
+    height: 50px;
+    background-size: cover;
+    border-radius: 100%;
+    border: solid 5px #fff;
 }
