@@ -158,6 +158,11 @@
 
             // Update the prices
             function getNext(i) {
+                $('#gh-price-button-' + i).removeClass('is-danger');
+                $('#gh-price-button-' + i).attr('disabled', false);
+                $('#gh-price-button-' + i).addClass('is-loading');
+                $('#gh-price-button-' + i).html('Loading');
+                
                 if (i >= rawLocations.length) return;
                 var dayStart = rawLocations[i].start_date.day;
                 var dayEnd = rawLocations[i].end_date.day;
@@ -166,35 +171,52 @@
 
                 var outboundDate = rawLocations[i].start_date.year + '-' + rawLocations[i].start_date.month + '-' + dayStart;
                 var inboundDate = rawLocations[i].end_date.year + '-' + rawLocations[i].end_date.month + '-' + dayEnd;
-                
-                getQuotes(market, geoString, rawLocations[i].geoString, outboundDate, inboundDate, (raw) => {
-                    var json = JSON.parse(raw);
-                    // Parse carriers and places
-                    json.Places.forEach(function(place) {
-                        places[place.PlaceId] = place.Name;
-                    });
+                if (geoString != null && rawLocations[i].geoString != null) {
+                    getQuotes(market, geoString, rawLocations[i].geoString, outboundDate, inboundDate, (raw) => {
+                        if (!raw.startsWith('{"ValidationErrors":')) {
+                            var json = JSON.parse(raw);
+                            // Parse carriers and places
+                            json.Places.forEach(function(place) {
+                                places[place.PlaceId] = place.Name;
+                            });
 
-                    json.Carriers.forEach(function(carrier) {
-                        operators[carrier.CarrierId] = carrier.Name;
+                            json.Carriers.forEach(function(carrier) {
+                                operators[carrier.CarrierId] = carrier.Name;
+                            });
+                            
+                            $('#gh-price-button-' + i).removeClass('is-loading');
+                            rawLocations[i].quotes = json.Quotes;
+                            var minprice = Infinity;
+                            for (var j = 0; j < json.Quotes.length; j++) {
+                                if (json.Quotes[j].MinPrice < minprice) minprice = json.Quotes[j].MinPrice;
+                            }
+                            if (minprice == Infinity) {
+                                $('#gh-price-button-' + i).html('No flights found :\'(');
+                                $('#gh-price-button-' + i).removeClass('is-info');
+                                $('#gh-price-button-' + i).addClass('is-danger');
+                                $('#gh-price-button-' + i).attr('disabled', true);
+                            } else {
+                                $('#gh-price-button-' + i).html('Fly from £' + minprice);
+                            }
+                        } else {
+                            $('#gh-price-button-' + i).html('No flights found :\'(');
+                            $('#gh-price-button-' + i).removeClass('is-info');
+                            $('#gh-price-button-' + i).addClass('is-danger');
+                            $('#gh-price-button-' + i).attr('disabled', true);
+                            
+                        }
+                        
+                        getNext(i + 1);
                     });
-                    
+                } else {
                     $('#gh-price-button-' + i).removeClass('is-loading');
-                    rawLocations[i].quotes = json.Quotes;
-                    var minprice = Infinity;
-                    for (var j = 0; j < json.Quotes.length; j++) {
-                        if (json.Quotes[j].MinPrice < minprice) minprice = json.Quotes[j].MinPrice;
-                    }
-                    if (minprice == Infinity) {
-                        $('#gh-price-button-' + i).html('No flights found :\'(');
-                        $('#gh-price-button-' + i).removeClass('is-info');
-                        $('#gh-price-button-' + i).addClass('is-danger');
-                        $('#gh-price-button-' + i).attr('disabled', true);
-                    } else {
-                        $('#gh-price-button-' + i).html('Fly from £' + minprice);
-                    }
-                    
+                    $('#gh-price-button-' + i).removeClass('is-info');
+                    $('#gh-price-button-' + i).addClass('is-danger');
+                    $('#gh-price-button-' + i).attr('disabled', true);
+                    $('#gh-price-button-' + i).html('No flights found :\'(');
                     getNext(i + 1);
-                });
+                }
+                
             }
             getNext(0);
         };
@@ -266,8 +288,8 @@ function runAnimation() {
             if (country === "" || country === "GB") country = "UK"; // Just incase demo goes bad!
             market = country;
 
-            getGeoString(country, place.name, geoString => {
-                geoString = geoString;
+            getGeoString(country, place.name, gstring => {
+                geoString = gstring;
                 if (geoString == "" || geoString == "{}") geoString = "EDI"; 
                 updatePrices();
             });
@@ -447,9 +469,6 @@ function runAnimation() {
                         month: '05',
                         year: '2018'
                     }
-                }
-                if (!rawLocations[i].geoString) {
-                    rawLocations[i].geoString = "PARI-sky"
                 }
                 container.append(getHackathonTemplate(rawLocations[i]));
                 

@@ -32,17 +32,21 @@ module.exports = {
                 'Accept': 'application/json'
             }
         };
+        console.log(country + ': ' + query);
 
         request(options, function(err, response, body) {
             if (err) return cb(err);
-
+            console.log(body);
             body = JSON.parse(body);
+            if (body.Places) {
 
             if (body.Places.length < 1) {
                 return cb(new Error("No place for string"));
             }
-
-            cb(null, body.Places[0].PlaceId);
+                cb(null, body.Places[0].PlaceId);
+            } else {
+                cb(new Error('API error'));
+            }
         });
     },
 

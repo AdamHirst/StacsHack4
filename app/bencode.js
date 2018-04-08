@@ -11,27 +11,48 @@ module.exports =  {
 
 function scrapeAll(cb) {
 	scrape(mlhHackathons => {
-		scrapeHackathonCom(hackathonCom => {
-			mlhHackathons.push(...hackathonCom);
+		scrape(mlhNaHackathons => {
+			scrapeHackathonCom(hackathonCom => {
+				mlhHackathons.push(...mlhNaHackathons);
+				mlhHackathons.push(...hackathonCom);
 
-			function comparator(a, b) {
-				var aDate = new Date();
-				var aD = aDate.setFullYear(a.start_date.year, parseInt(a.start_date.month)-1, a.start_date.day);
-				var bDate = new Date();
-				var bD = bDate.setFullYear(b.start_date.year, parseInt(b.start_date.month)-1, b.start_date.day);
-				return aD > bD ? 1 : -1;
-			}
+				mlhHackathons.push({
+					"title": 'STACSHack 4',
+					"start_date": {
+						"day" : '10',
+						"month": '04',
+						"year": '2018'
+					},
+					"end_date": {
+						"day": '11',
+						"month": '04',
+						"year": '2018'
+					},
+					"splash" : 'http://www.stacshack.site/assets/images/comicstrip-2000x2591.jpg',
+					"logo" : 'https://slack-files2.s3-us-west-2.amazonaws.com/avatars/2018-02-26/321122019621_9602e3dba0bc961cba4f_88.png',
+					"address_local": 'St Andrews',
+					"address_region": 'UK'
+				});
 
-			mlhHackathons.sort(comparator);
+				function comparator(a, b) {
+					var aDate = new Date();
+					var aD = aDate.setFullYear(a.start_date.year, parseInt(a.start_date.month)-1, a.start_date.day);
+					var bDate = new Date();
+					var bD = bDate.setFullYear(b.start_date.year, parseInt(b.start_date.month)-1, b.start_date.day);
+					return aD > bD ? 1 : -1;
+				}
+
+				mlhHackathons.sort(comparator);
 
 
-			cb(mlhHackathons);
-		})
-	})
+				cb(mlhHackathons);
+			})
+		}, 'na')
+	}, 'eu')
 }
 
-function scrape(f) {
-	request("https://mlh.io/seasons/eu-2018/events", function(err, response, html){
+function scrape(f, region) {
+	request("https://mlh.io/seasons/" + region + "-2018/events", function(err, response, html){
 		if (err || response.statusCode != 200) {
 			console.log("error lol");
 		}
@@ -63,6 +84,14 @@ function scrape(f) {
 			var aD = aDate.setFullYear(year, parseInt(month)-1, start_day);
 			if (aD < Date.now()) year = year + 1;
 
+			var addrLocal = $("div>span", inner).eq(0).text();
+			var addrRegion = $("div>span", inner).eq(1).text();
+
+			if (region == 'na' && addrRegion != 'Canada') {
+				addrLocal += ', ' + addrRegion;
+				addrRegion = 'United States';
+			}
+
 			hacks.push({
 				"title": $("h3", inner).text(),
 				"start_date": {
@@ -77,8 +106,8 @@ function scrape(f) {
 				},
 				"splash" : $("div.image-wrap>img", inner).attr("src"),
 				"logo" : $("div.event-logo>img", inner).attr("src"),
-				"address_local": $("div>span", inner).eq(0).text(),
-				"address_region": $("div>span", inner).eq(1).text()
+				"address_local": addrLocal,
+				"address_region": addrRegion
 			})
 		})
 
@@ -171,8 +200,6 @@ function scrapeHackathonCom(cb, page_num) {
 				address_region: address_region
 			})
 		})
-
-		console.log(page_num);
 
 		if (hacks.length != 0) { // More to come?
 			scrapeHackathonCom(newHacks => {

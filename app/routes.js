@@ -20,35 +20,34 @@ const updateHackathons = (cb) => {
     needsUpdate = false;
     ben.scrape(hackathons => {
         hacks = hackathons;
-        
         hacks.forEach(hackathon => {
             if (geostrings[hackathon.address_local]) {
                 hackathon.geoString = geostrings[hackathon.address_local];
             } else {
                 if (!hackathon.address_region) {
-                    hackathon.geoString = 'PARI-sky';
                 } else {
                     var country = hackathon.address_region.toLowerCase().replace('-', ' ');
-                    
-                    if (country.length > 2) country = countries[country];
-                    console.log(validCCodes.includes(country));
-                    if (validCCodes.includes(country)) {
-                        adam.getGeolocatedString(country.toUpperCase(), hackathon.address_local.toLowerCase().replace('-', ' '), (err, glString) => {
+                    var countryCode = country;
+                    if (country.length > 2) countryCode = countries[country];
+                    if (validCCodes.includes(countryCode)) {
+                        adam.getGeolocatedString(countryCode.toUpperCase(), hackathon.address_local.toLowerCase().replace('-', ' '), (err, glString) => {
                             geostrings[hackathon.address_local] = glString;
                             hackathon.geoString = glString;
                         });
                     } else {
-                        if (country) {
-                            adam.getGeolocatedString(country.toUpperCase(), hackathon.address_region.toLowerCase().replace('-', ' '), (err, glString) => {
+                        if (countryCode) {
+                            adam.getGeolocatedString(countryCode.toUpperCase(), hackathon.address_region.toLowerCase().replace('-', ' '), (err, glString) => {
                                 geostrings[hackathon.address_local] = glString;
                                 hackathon.geoString = glString;
                             });
                         } else {
-                            hackathon.geoString = 'PARI-sky'
                         }
                     }
-                }   
+                }
             }
+        });
+        
+        hacks.forEach(hackathon => {
             if (latlngs[hackathon.address_local]) {
                 hackathon.location = latlngs[hackathon.address_local];
             } else {
@@ -109,7 +108,6 @@ module.exports = (app) => {
             adam.getQuotes(req.query.market, req.query.origin, req.query.destination, req.query.outboundDate, req.query.inboundDate, (err, quotes) => {
                 if (err) res.send(err);
                 else {
-                    quotes.Link = adam.getReferralLink();
                     res.send(quotes);
                 }
             });
