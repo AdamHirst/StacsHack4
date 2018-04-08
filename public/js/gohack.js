@@ -26,3 +26,10 @@ function getLocations(cb) {
     var url = '/hackathons';
     ajax(url, cb);
 }
+
+function getReferralLink(market, origin, destination, outboundDate, inboundDate) {
+    var url = `/getReferralLink/?market=${market}&origin=${origin}&destination=${destination}&outboundDate=${outboundDate}&inboundDate=${inboundDate}`
+    return new Promise(function(resolve, reject){
+        ajax(url, resolve);
+    });
+}

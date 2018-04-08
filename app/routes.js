@@ -103,6 +103,10 @@ module.exports = (app) => {
             if (err) return res.send(err);
             res.send(geoString);
         });
-    })
+    });
+
+    app.get('/getReferralLink', (req, res) => {
+    	 res.send(adam.getReferralLink(req.query.market, req.query.origin, req.query.destination, req.query.outboundDate, req.query.inboundDate));
+    });
 
 }

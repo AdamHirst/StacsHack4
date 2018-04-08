@@ -96,10 +96,13 @@
                 var dayEnd = rawLocations[i].end_date.day;
                 if (dayStart.length == 1) dayStart = '0' + dayStart;
 			    if (dayEnd.length == 1) dayEnd = '0' + dayEnd;
+
+                var outboundDate = rawLocations[i].start_date.year + '-' + rawLocations[i].start_date.month + '-' + dayStart;
+                var inboundDate = rawLocations[i].end_date.year + '-' + rawLocations[i].end_date.month + '-' + dayEnd;
                 
-                getQuotes(market, geoString, rawLocations[i].geoString, rawLocations[i].start_date.year + '-' + rawLocations[i].start_date.month + '-' + dayStart, rawLocations[i].end_date.year + '-' + rawLocations[i].end_date.month + '-' + dayEnd, (raw) => {
+                getQuotes(market, geoString, rawLocations[i].geoString, outboundDate, inboundDate, (raw) => {
                     var json = JSON.parse(raw);
-                    console.log(raw);
+
                     // Parse carriers and places
                     json.Places.forEach(function(place) {
                         places[place.PlaceId] = place.Name;
@@ -206,7 +209,29 @@
 
         function openMapWithButton(hackathon) {
             transitionToMap($('#gh-card-' + hackathon));
+            console.log("HT", hackathon)
             
+            var dayStart = rawLocations[hackathon].start_date.day;
+            var dayEnd = rawLocations[hackathon].end_date.day;
+            if (dayStart.length == 1) dayStart = '0' + dayStart;
+            if (dayEnd.length == 1) dayEnd = '0' + dayEnd;
+
+            var outboundDate = rawLocations[hackathon].start_date.year + '-' + rawLocations[hackathon].start_date.month + '-' + dayStart;
+            var inboundDate = rawLocations[hackathon].end_date.year + '-' + rawLocations[hackathon].end_date.month + '-' + dayEnd;
+
+            // Pressed da button and already in map view???
+            if (window.location.hash == "#map") {
+                // Ayy
+                console.log("going...")
+                getReferralLink(market, geoString, rawLocations[hackathon].geoString, outboundDate, inboundDate).then(function(link) {
+                    window.location.href = link; // Redirect
+                    console.log(" gone")
+                });
+            }
+
+            // fuck it we're map view now
+            window.location.hash = "map"
+
             var el = $("#gh-quotes");
             el.html('');
 
@@ -272,6 +297,8 @@
         }
 
         function closeMap() {
+            window.location.hash = ""
+
             var nEl = $('#gh-overlay-card');
             nEl.html('');
             nEl.css('display', 'none');

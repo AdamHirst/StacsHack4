@@ -49,7 +49,7 @@ module.exports = {
     getCountries: (cb) => {
         const url = `${apiBase}/reference/v1.0/countries/en-US?apiKey=${apiKey}`;
 
-        var options = {
+         var options = {
             url: url,
             headers: {
                 'Accept': 'application/json'
@@ -63,6 +63,10 @@ module.exports = {
             
             cb(null, body.Countries);
         });
+
+    },
+    getReferralLink: (market, origin, destination, outboundDate, inboundDate, cb) => {
+        return `${apiBase}/referral/v1.0/${market}/GBP/en-US/${origin}/${destination}/${outboundDate}/${inboundDate}?apiKey=${apiKey}`;
     }
     
 }
