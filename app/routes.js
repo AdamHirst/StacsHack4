@@ -38,7 +38,14 @@ const updateHackathons = (cb) => {
                             hackathon.geoString = glString;
                         });
                     } else {
-                        hackathon.geoString = 'PARI-sky';
+                        if (country) {
+                            adam.getGeolocatedString(country.toUpperCase(), hackathon.address_region.toLowerCase().replace('-', ' '), (err, glString) => {
+                                geostrings[hackathon.address_local] = glString;
+                                hackathon.geoString = glString;
+                            });
+                        } else {
+                            hackathon.geoString = 'PARI-sky'
+                        }
                     }
                 }   
             }

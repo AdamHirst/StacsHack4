@@ -86,7 +86,9 @@
 
         var mainMap = new mapboxgl.Map({
         container: 'main-map',
-        style: 'mapbox://styles/orkanna/cjfpjff7r0gpg2sll20wlc7p4'
+        style: 'mapbox://styles/orkanna/cjfpjff7r0gpg2sll20wlc7p4',
+        center: [4.383331812371239, 50.049033832079914],
+        zoom: 4
         });
 
         var pairs = [];
@@ -204,7 +206,7 @@
 function animateLine() {
     if (!perfAnim) return;
 
-    if (lineStatus >= 3*activeLine.geometries[0].coords.length) {
+    if (lineStatus > 3*activeLine.geometries[0].coords.length) {
         lineStatus = 0;
     }
 
@@ -356,6 +358,7 @@ function runAnimation() {
                     activeLine = getArc(latitude, longitude, loc.latitude, loc.longitude);
                     geojson.features = [];
                     runAnimation();
+                    $("#gh-id-" + hackathon).css('border-color', '#009CE0');
                 }
             // // Pressed da button and already in map view???
             // if (window.location.hash == "#map") {
@@ -409,6 +412,7 @@ function runAnimation() {
                     $('#gh-overlay-card').find('a').attr('onclick', 'refferToSkyscanner(' + marker.properties['gh-id'] + ')');
                     e2.find('a').attr('onclick', 'refferToSkyscanner(' + marker.properties['gh-id'] + ')');
 
+                    
                     rawLocations[marker.properties['gh-id']].quotes.forEach(function(quote) {
                         e2.append(getFlightTemplate(quote));
                     });
