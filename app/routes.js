@@ -109,6 +109,7 @@ module.exports = (app) => {
             adam.getQuotes(req.query.market, req.query.origin, req.query.destination, req.query.outboundDate, req.query.inboundDate, (err, quotes) => {
                 if (err) res.send(err);
                 else {
+                    quotes.Link = adam.getReferralLink();
                     res.send(quotes);
                 }
             });
