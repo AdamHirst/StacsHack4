@@ -19,6 +19,7 @@
   "homepage": "https://github.com/AdamHirst/StacsHack4#readme",
   "dependencies": {
     "cheerio": "^1.0.0-rc.2",
+    "cryptiles": "^4.1.2",
     "ejs": "^2.5.8",
     "express": "^4.16.3",
     "node-geocoder": "^3.22.0",
